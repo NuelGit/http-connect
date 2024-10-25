@@ -1,10 +1,46 @@
+// import { useState, useEffect } from 'react';
 import Places from './Places.jsx';
+import ErrorComponent from './ErrorComponent.jsx';
+import { sortPlacesByDistance } from '../loc.js';
+import { fetchAvailableMeals } from '../http.js';
+import { useFetchData } from '../hooks/useFetch.js';
+
+async function fetchSortedPlaces() {
+  const places = await fetchAvailableMeals()
+
+  return new Promise((resolve) => {
+      navigator.geolocation.getCurrentPosition(( position ) =>{
+      const sortedPlaces = sortPlacesByDistance(places,
+         position.coords.altitude,
+         position.coords.longitude)
+         resolve(sortedPlaces)
+     
+     })
+  })
+  
+}
+
 
 export default function AvailablePlaces({ onSelectPlace }) {
+ 
+  const {isFetching,
+     error,
+     fetchedData: availablePlaces,
+    } = useFetchData(fetchSortedPlaces, [])
+
+
+
+  if(error) {
+    return <ErrorComponent title=" Damn Error just occured, cant fetched nothing"
+     message={error.message} />
+  }
+
   return (
     <Places
       title="Available Places"
-      places={[]}
+      places={availablePlaces}
+      isLoading={ isFetching }
+      loadingText = 'Fetching place data'
       fallbackText="No places available."
       onSelectPlace={onSelectPlace}
     />
